@@ -1,0 +1,56 @@
+name: MSBuild
+
+on: [push]
+
+env:
+  # Path to the solution file relative to the root of the project.
+  SOLUTION_FILE_PATH: ./windows/ZeroTierOne.sln
+
+  BUILD_CONFIGURATION: Release
+  
+  BUILD_PROJECT: ZeroTierOne
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        platform: [x64, Win32]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.0.2
+
+    - name: Build
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      # Add additional options to the MSBuild command line here (like platform or verbosity level).
+      # See https://docs.microsoft.com/visualstudio/msbuild/msbuild-command-line-reference
+      run: msbuild /m /t:${{env.BUILD_PROJECT}} /p:Configuration=${{env.BUILD_CONFIGURATION}} /p:Platform=${{matrix.platform}} /p:BuildProjectReferences=false ${{env.SOLUTION_FILE_PATH}}
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+          name: ZeroTier Binaries
+          path: |
+             ./windows/Build/Win32/Release/zerotier-one_x86.exe
+             ./windows/Build/x64/Release/zerotier-one_x64.exe
+          if-no-files-found: warn
+          retention-days: 0
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v2.0.10
+      with:
+         name: ZeroTier Binaries
+         path: ./release-binaries/
+    - name: Release artifact
+      uses: fnkr/github-action-ghr@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+          GHR_COMPRESS: zip
+          GHR_PATH: ./release-binaries/
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}

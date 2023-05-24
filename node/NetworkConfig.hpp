@@ -177,7 +177,7 @@ namespace ZeroTier {
 #define ZT_NETWORKCONFIG_DICT_KEY_CERTIFICATES_OF_OWNERSHIP "COO"
 // dns (binary blobs)
 #define ZT_NETWORKCONFIG_DICT_KEY_DNS "DNS"
-// sso enabld
+// sso enabled
 #define ZT_NETWORKCONFIG_DICT_KEY_SSO_ENABLED "ssoe"
 // so version
 #define ZT_NETWORKCONFIG_DICT_KEY_SSO_VERSION "ssov"
@@ -195,12 +195,14 @@ namespace ZeroTier {
 #define ZT_NETWORKCONFIG_DICT_KEY_STATE "ssos"
 // client ID
 #define ZT_NETWORKCONFIG_DICT_KEY_CLIENT_ID "ssocid"
+// SSO Provider
+#define ZT_NETWORKCONFIG_DICT_KEY_SSO_PROVIDER "ssop"
 
 // AuthInfo fields -- used by ncSendError for sso
 
 // AuthInfo Version
 #define ZT_AUTHINFO_DICT_KEY_VERSION "aV"
-// authenticaiton URL
+// authentication URL
 #define ZT_AUTHINFO_DICT_KEY_AUTHENTICATION_URL "aU"
 // issuer URL
 #define ZT_AUTHINFO_DICT_KEY_ISSUER_URL "iU"
@@ -212,6 +214,8 @@ namespace ZeroTier {
 #define ZT_AUTHINFO_DICT_KEY_STATE "aS"
 // Client ID
 #define ZT_AUTHINFO_DICT_KEY_CLIENT_ID "aCID"
+// SSO Provider
+#define ZT_AUTHINFO_DICT_KEY_SSO_PROVIDER "aSSOp"
 
 // Legacy fields -- these are obsoleted but are included when older clients query
 
@@ -289,6 +293,7 @@ public:
 		memset(ssoNonce, 0, sizeof(ssoNonce));
 		memset(ssoState, 0, sizeof(ssoState));
 		memset(ssoClientID, 0, sizeof(ssoClientID));
+		strncpy(ssoProvider, "default", sizeof(ssoProvider));
 	}
 
 	/**
@@ -351,8 +356,9 @@ public:
 	{
 		std::vector<Address> r;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0)
+			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0) {
 				r.push_back(Address(specialists[i]));
+			}
 		}
 		return r;
 	}
@@ -361,8 +367,9 @@ public:
 	{
 		unsigned int c = 0;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0)
+			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0) {
 				ab[c++] = specialists[i];
+			}
 		}
 		return c;
 	}
@@ -370,8 +377,9 @@ public:
 	inline bool isActiveBridge(const Address &a) const
 	{
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if (((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0)&&(a == specialists[i]))
+			if (((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0)&&(a == specialists[i])) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -380,8 +388,9 @@ public:
 	{
 		std::vector<Address> r;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR) != 0)
+			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR) != 0) {
 				r.push_back(Address(specialists[i]));
+			}
 		}
 		return r;
 	}
@@ -390,8 +399,9 @@ public:
 	{
 		std::vector<Address> r;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0)
+			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0) {
 				r.push_back(Address(specialists[i]));
+			}
 		}
 		return r;
 	}
@@ -400,8 +410,9 @@ public:
 	{
 		unsigned int c = 0;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0)
+			if ((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0) {
 				mr[c++] = specialists[i];
+			}
 		}
 		return c;
 	}
@@ -409,8 +420,9 @@ public:
 	inline bool isMulticastReplicator(const Address &a) const
 	{
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if (((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0)&&(a == specialists[i]))
+			if (((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR) != 0)&&(a == specialists[i])) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -419,8 +431,9 @@ public:
 	{
 		std::vector<Address> r;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & (ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR | ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR)) != 0)
+			if ((specialists[i] & (ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR | ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR)) != 0) {
 				r.push_back(Address(specialists[i]));
+			}
 		}
 		return r;
 	}
@@ -429,8 +442,9 @@ public:
 	{
 		unsigned int c = 0;
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((specialists[i] & (ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR | ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR)) != 0)
+			if ((specialists[i] & (ZT_NETWORKCONFIG_SPECIALIST_TYPE_ANCHOR | ZT_NETWORKCONFIG_SPECIALIST_TYPE_MULTICAST_REPLICATOR)) != 0) {
 				ac[c++] = specialists[i];
+			}
 		}
 		return c;
 	}
@@ -451,8 +465,9 @@ public:
 	inline bool permitsBridging(const Address &fromPeer) const
 	{
 		for(unsigned int i=0;i<specialistCount;++i) {
-			if ((fromPeer == specialists[i])&&((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0))
+			if ((fromPeer == specialists[i])&&((specialists[i] & ZT_NETWORKCONFIG_SPECIALIST_TYPE_ACTIVE_BRIDGE) != 0)) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -490,8 +505,9 @@ public:
 	const Capability *capability(const uint32_t id) const
 	{
 		for(unsigned int i=0;i<capabilityCount;++i) {
-			if (capabilities[i].id() == id)
+			if (capabilities[i].id() == id) {
 				return &(capabilities[i]);
+			}
 		}
 		return (Capability *)0;
 	}
@@ -499,8 +515,9 @@ public:
 	const Tag *tag(const uint32_t id) const
 	{
 		for(unsigned int i=0;i<tagCount;++i) {
-			if (tags[i].id() == id)
+			if (tags[i].id() == id) {
 				return &(tags[i]);
+			}
 		}
 		return (Tag *)0;
 	}
@@ -659,7 +676,7 @@ public:
 	bool ssoEnabled;
 
 	/**
-	 * SSO verison
+	 * SSO version
 	 */
 	uint64_t ssoVersion;
 
@@ -699,6 +716,15 @@ public:
 	 * oidc client id
 	 */
 	char ssoClientID[256];
+
+	/**
+	 * oidc provider
+	 *
+	 * because certain providers require specific scopes to be requested
+	 * and others to be not requested in order to make everything work
+	 * correctly
+	 **/
+	char ssoProvider[64];
 };
 
 } // namespace ZeroTier

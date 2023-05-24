@@ -122,9 +122,10 @@ class Link {
 	 * @param mode
 	 * @param failoverToLinkStr
 	 */
-	Link(std::string ifnameStr, uint8_t ipvPref, uint32_t capacity, bool enabled, uint8_t mode, std::string failoverToLinkStr)
+	Link(std::string ifnameStr, uint8_t ipvPref, uint16_t mtu, uint32_t capacity, bool enabled, uint8_t mode, std::string failoverToLinkStr)
 		: _ifnameStr(ifnameStr)
 		, _ipvPref(ipvPref)
+		, _mtu(mtu)
 		, _capacity(capacity)
 		, _relativeCapacity(0.0)
 		, _enabled(enabled)
@@ -227,6 +228,14 @@ class Link {
 	}
 
 	/**
+	 * @return The MTU for this link (as specified by the user.)
+	 */
+	inline uint16_t mtu()
+	{
+		return _mtu;
+	}
+
+	/**
 	 * @return The mode (e.g. primary/spare) for this link (as specified by the user.)
 	 */
 	inline uint8_t mode()
@@ -259,6 +268,11 @@ class Link {
 	 * 64: IPv6 over IPv4
 	 */
 	uint8_t _ipvPref;
+
+	/**
+	 * The physical-layer MTU for this link
+	 */
+	uint16_t _mtu;
 
 	/**
 	 * User-specified capacity of this link
@@ -875,8 +889,7 @@ class Bond {
 		_lastAckRateCheck = now;
 		if (_ackCutoffCount > numToDrain) {
 			_ackCutoffCount -= numToDrain;
-		}
-		else {
+		} else {
 			_ackCutoffCount = 0;
 		}
 		return (_ackCutoffCount < ZT_ACK_CUTOFF_LIMIT);
@@ -895,8 +908,7 @@ class Bond {
 		uint64_t diff = now - _lastQoSRateCheck;
 		if ((diff) <= (_qosSendInterval / ZT_MAX_PEER_NETWORK_PATHS)) {
 			++_qosCutoffCount;
-		}
-		else {
+		} else {
 			_qosCutoffCount = 0;
 		}
 		_lastQoSRateCheck = now;
@@ -916,8 +928,7 @@ class Bond {
 		int diff = now - _lastPathNegotiationReceived;
 		if ((diff) <= (ZT_PATH_NEGOTIATION_CUTOFF_TIME / ZT_MAX_PEER_NETWORK_PATHS)) {
 			++_pathNegotiationCutoffCount;
-		}
-		else {
+		} else {
 			_pathNegotiationCutoffCount = 0;
 		}
 		_lastPathNegotiationReceived = now;
@@ -1214,20 +1225,17 @@ class Bond {
 				unsigned int suggestedRefractoryPeriod = refractoryPeriod ? punishment + (refractoryPeriod * 2) : punishment;
 				refractoryPeriod = std::min(suggestedRefractoryPeriod, (unsigned int)ZT_BOND_MAX_REFRACTORY_PERIOD);
 				lastRefractoryUpdate = 0;
-			}
-			else {
+			} else {
 				uint32_t drainRefractory = 0;
 				if (lastRefractoryUpdate) {
 					drainRefractory = (now - lastRefractoryUpdate);
-				}
-				else {
+				} else {
 					drainRefractory = (now - lastAliveToggle);
 				}
 				lastRefractoryUpdate = now;
 				if (refractoryPeriod > drainRefractory) {
 					refractoryPeriod -= drainRefractory;
-				}
-				else {
+				} else {
 					refractoryPeriod = 0;
 					lastRefractoryUpdate = 0;
 				}

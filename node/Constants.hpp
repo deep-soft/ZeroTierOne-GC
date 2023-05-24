@@ -137,6 +137,13 @@
 #endif
 #endif
 
+#ifndef ZT_ARCH_ARM_HAS_CRYPTO
+#if defined(__ARM_FEATURE_CRYPTO)
+// ARM Cryptography Extension
+#define ZT_ARCH_ARM_HAS_CRYPTO
+#endif
+#endif
+
 // Define ZT_NO_TYPE_PUNNING to disable reckless casts on anything other than x86/x64.
 #if (!(defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_AMD64) || defined(_M_X64) || defined(i386) || defined(__i386) || defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(_M_IX86) || defined(__X86__) || defined(_X86_) || defined(__I86__) || defined(__INTEL__) || defined(__386)))
 #ifndef ZT_NO_TYPE_PUNNING
@@ -517,7 +524,7 @@
 #define ZT_ACK_CUTOFF_LIMIT 128
 #define ZT_ACK_DRAINAGE_DIVISOR (1000 / ZT_ACK_CUTOFF_LIMIT)
 
-#define ZT_BOND_DEFAULT_REFRCTORY_PERIOD 8000
+#define ZT_BOND_DEFAULT_REFRACTORY_PERIOD 8000
 #define ZT_BOND_MAX_REFRACTORY_PERIOD 600000
 
 /**

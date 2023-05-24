@@ -9,7 +9,7 @@ ifeq ($(origin CXX),default)
 	CXX:=$(shell if [ -e /opt/rh/devtoolset-8/root/usr/bin/g++ ]; then echo /opt/rh/devtoolset-8/root/usr/bin/g++; else echo $(CXX); fi)
 endif
 
-INCLUDES?=-Izeroidc/target -isystem ext
+INCLUDES?=-Izeroidc/target -isystem ext -Iext/prometheus-cpp-lite-1.0/core/include -Iext-prometheus-cpp-lite-1.0/3rdparty/http-client-lite/include -Iext/prometheus-cpp-lite-1.0/simpleapi/include
 DEFS?=
 LDLIBS?=
 DESTDIR?=
@@ -146,6 +146,9 @@ endif
 ifeq ($(CC_MACH),e2k)
 	ZT_ARCHITECTURE=2
 endif
+ifeq ($(CC_MACH),e2k64)
+	ZT_ARCHITECTURE=2
+endif
 ifeq ($(CC_MACH),i386)
 	ZT_ARCHITECTURE=1
 	ZT_SSO_SUPPORTED=1
@@ -194,6 +197,11 @@ ifeq ($(CC_MACH),armv6zk)
 	ZT_USE_ARM32_NEON_ASM_CRYPTO=1
 endif
 ifeq ($(CC_MACH),armv6kz)
+	ZT_ARCHITECTURE=3
+	override DEFS+=-DZT_NO_TYPE_PUNNING
+	ZT_USE_ARM32_NEON_ASM_CRYPTO=1
+endif
+ifeq ($(CC_MACH),armv6k)
 	ZT_ARCHITECTURE=3
 	override DEFS+=-DZT_NO_TYPE_PUNNING
 	ZT_USE_ARM32_NEON_ASM_CRYPTO=1
@@ -257,7 +265,7 @@ endif
 
 # Fail if system architecture could not be determined
 ifeq ($(ZT_ARCHITECTURE),999)
-ERR=$(error FATAL: architecture could not be determined from $(CC) -dumpmachine: $CC_MACH)
+ERR=$(error FATAL: architecture could not be determined from $(CC) -dumpmachine: $(CC_MACH))
 .PHONY: err
 err: ; $(ERR)
 endif
@@ -303,7 +311,7 @@ endif
 ifeq ($(ZT_CONTROLLER),1)
 	override CXXFLAGS+=-Wall -Wno-deprecated -std=c++17 -pthread $(INCLUDES) -DNDEBUG $(DEFS)
 	override LDLIBS+=-Lext/libpqxx-7.7.3/install/ubuntu22.04/lib -lpqxx -lpq ext/hiredis-1.0.2/lib/ubuntu22.04/libhiredis.a ext/redis-plus-plus-1.3.3/install/ubuntu22.04/lib/libredis++.a -lssl -lcrypto
-	override DEFS+=-DZT_CONTROLLER_USE_LIBPQ
+	override DEFS+=-DZT_CONTROLLER_USE_LIBPQ -DZT_NO_PEER_METRICS
 	override INCLUDES+=-I/usr/include/postgresql -Iext/libpqxx-7.7.3/install/ubuntu22.04/include -Iext/hiredis-1.0.2/include/ -Iext/redis-plus-plus-1.3.3/install/ubuntu22.04/include/sw/
 endif
 
@@ -468,17 +476,19 @@ echo_flags:
 	@echo "echo_flags :: RUSTFLAGS=$(RUSTFLAGS)"
 	@echo "=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~"
 
-# debian: echo_flags
-# 	@echo "building deb package"
-# 	debuild --no-lintian -b -uc -us
-
-debian:	FORCE
+debian: echo_flags
+	@echo "building deb package"
 	debuild --no-lintian -I -i -us -uc -nc -b
+	# debuild --no-lintian -b -uc -us
+
+# debian:	FORCE
+# 	debuild --no-lintian -I -i -us -uc -nc -b
 
 debian-clean: FORCE
 	rm -rf debian/files debian/zerotier-one*.debhelper debian/zerotier-one.substvars debian/*.log debian/zerotier-one debian/.debhelper debian/debhelper-build-stamp
 
-redhat:	FORCE
+redhat:
+	@echo "building rpm package"
 	rpmbuild --target `rpm -q bash --qf "%{arch}"` -ba zerotier-one.spec
 
 # This installs the packages needed to build ZT locally on CentOS 7 and
@@ -498,15 +508,12 @@ snap-uninstall: FORCE
 	snap remove zerotier
 
 snap-build-remote: FORCE
-	cd pkg && snapcraft remote-build --build-on=amd64,arm64,s390x,ppc64el,armhf,i386
+	cd pkg && snapcraft remote-build --build-for=amd64,arm64,s390x,ppc64el,armhf,i386
 
-snap-upload-beta: FORCE
-	snapcraft login --with-file=snapcraft-login-data
-	pushd pkg
-	for SNAPFILE in ./*.snap; do\
-		snapcraft upload --release=stable,beta,edge,candidate $${SNAPFILE};\
+snap-upload: ./pkg/*.snap
+	for file in $^ ; do \
+		snapcraft upload --release=beta,edge,candidate $${file} ; \
 	done
-	popd
 
 synology-pkg: FORCE
 	cd pkg/synology ; ./build.sh build

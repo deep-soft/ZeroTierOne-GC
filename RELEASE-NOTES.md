@@ -1,6 +1,52 @@
 ZeroTier Release Notes
 ======
 
+# 2023-03-23 -- Version 1.10.6
+
+  * Prevent binding temporary ipv6 addresses on macos (#1910)
+  * Prevent path-learning loops (#1914)
+  * Prevent infinite loop of UAC prompts in tray app
+
+# 2023-03-10 -- Version 1.10.5
+
+ * Fix for high CPU usage bug on Windows
+
+# 2023-03-07 -- Version 1.10.4
+
+ * SECURITY FIX (Windows): this version fixes a file permission problem on
+   Windows that could allow non-privileged users on a Windows system to read
+   privileged files in the ZeroTier service's working directory. This could
+   allow an unprivileged local Windows user to administrate the local ZeroTier
+   instance without appropriate local permissions. This issue is not remotely
+   exploitable unless a remote user can read arbitrary local files, and does
+   not impact other operating systems.
+
+ * Fix a bug in the handling of multiple IP address assignments to virtual
+   interfaces on macOS.
+
+# 2023-02-15 -- Version 1.10.3
+
+ * Fix for duplicate paths in client. Could cause connectivity issues. Affects all platforms.
+ * Fix for Ethernet Tap MTU setting, would not properly apply on Linux.
+ * Fix default route bugs (macOS.)
+ * Enable Ping automatically for ZeroTier Adapters (Windows.)
+ * SSO updates and minor bugfixes.
+ * Add low-bandwidth mode.
+ * Add forceTcpRelay mode (optionally enabled.)
+ * Fix bug that prevented setting of custom TCP relay address.
+ * Build script improvements and bug fixes.
+
+# 2022-11-01 -- Version 1.10.2
+
+ * Fix another SSO "stuck client" issue in zeroidc.
+ * Expose root-reported external IP/port information via the local JSON API for better diagnostics.
+ * Multipath: CLI output improvement for inspecting bonds
+ * Multipath: balance-aware mode
+ * Multipath: Custom policies
+ * Multipath: Link quality measurement improvements
+
+Note that releases are coming few and far between because most of our dev effort is going into version 2.
+
 # 2022-06-27 -- Version 1.10.1
 
  * Fix an issue that could cause SSO clients to get "stuck" on stale auth URLs.
@@ -21,7 +67,7 @@ ZeroTier Release Notes
 
 # 2022-04-25 -- Version 1.8.9
 
- * Fixed a long-standing and strange bug that was causing sporadic "phantom" packet authentication failures. Not a security problem but could be behind spordaic reports of link failures under some conditions.
+ * Fixed a long-standing and strange bug that was causing sporadic "phantom" packet authentication failures. Not a security problem but could be behind sporadic reports of link failures under some conditions.
  * Fized a memory leak in SSO/OIDC support.
  * Fixed SSO/OIDC display error on CLI.
  * Fixed a bug causing nodes to sometimes fail to push certs to each other (primarily affects SSO/OIDC use cases).

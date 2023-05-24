@@ -449,12 +449,16 @@ static int cli(int argc,char **argv)
 			if (json) {
 				printf("%s" ZT_EOL_S,OSUtils::jsonDump(j).c_str());
 			} else {
-				printf("200 peers\n<ztaddr>   <ver>  <role> <lat> <link> <lastTX> <lastRX> <path>" ZT_EOL_S);
+				bool anyTunneled = false;
+				printf("200 peers\n<ztaddr>   <ver>  <role> <lat> <link>   <lastTX> <lastRX> <path>" ZT_EOL_S);
 				if (j.is_array()) {
 					for(unsigned long k=0;k<j.size();++k) {
 						nlohmann::json &p = j[k];
 						std::string bestPath;
 						nlohmann::json &paths = p["paths"];
+						if (p["tunneled"]) {
+							anyTunneled = true;
+						}
 						if (paths.is_array()) {
 							for(unsigned long i=0;i<paths.size();++i) {
 								nlohmann::json &path = paths[i];
@@ -465,12 +469,19 @@ static int cli(int argc,char **argv)
 									int64_t lastSendDiff = (uint64_t)path["lastSend"] ? now - (uint64_t)path["lastSend"] : -1;
 									int64_t lastReceiveDiff = (uint64_t)path["lastReceive"] ? now - (uint64_t)path["lastReceive"] : -1;
 									OSUtils::ztsnprintf(tmp,sizeof(tmp),"%-8lld %-8lld %s",lastSendDiff,lastReceiveDiff,addr.c_str());
-									bestPath = std::string("DIRECT ") + tmp;
+									if (p["tunneled"]) {
+										bestPath = std::string("RELAY ") + tmp;
+									}
+									else {
+										bestPath = std::string("DIRECT   ") + tmp;
+									}
 									break;
 								}
 							}
 						}
-						if (bestPath.length() == 0) bestPath = "RELAY";
+						if (bestPath.length() == 0) {
+							bestPath = "RELAY";
+						}
 						char ver[128];
 						int64_t vmaj = p["versionMajor"];
 						int64_t vmin = p["versionMinor"];
@@ -489,6 +500,9 @@ static int cli(int argc,char **argv)
 							bestPath.c_str());
 					}
 				}
+				if (anyTunneled) {
+					printf("NOTE: Currently tunneling through a TCP relay. Ensure that UDP is not blocked.\n");
+				}
 			}
 			return 0;
 		} else {
@@ -503,7 +517,7 @@ static int cli(int argc,char **argv)
 		}
 		/* zerotier-cli bond list */
 		if (arg1 == "list") {
-			const unsigned int scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/bonds",requestHeaders,responseHeaders,responseBody);
+			const unsigned int scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/peer",requestHeaders,responseHeaders,responseBody);
 			if (scode == 0) {
 				printf("Error connecting to the ZeroTier service: %s\n\nPlease check that the service is running and that TCP port 9993 can be contacted via 127.0.0.1." ZT_EOL_S, responseBody.c_str());
 				return 1;
@@ -529,13 +543,13 @@ static int cli(int argc,char **argv)
 							nlohmann::json &p = j[k];
 							bool isBonded = p["isBonded"];
 							if (isBonded) {
-								int8_t bondingPolicy = p["bondingPolicy"];
+								int8_t bondingPolicyCode = p["bondingPolicyCode"];
 								int8_t numAliveLinks = p["numAliveLinks"];
 								int8_t numTotalLinks = p["numTotalLinks"];
 								bFoundBond = true;
 								std::string policyStr = "none";
-								if (bondingPolicy >= ZT_BOND_POLICY_NONE && bondingPolicy <= ZT_BOND_POLICY_BALANCE_AWARE) {
-									policyStr = Bond::getPolicyStrByCode(bondingPolicy);
+								if (bondingPolicyCode >= ZT_BOND_POLICY_NONE && bondingPolicyCode <= ZT_BOND_POLICY_BALANCE_AWARE) {
+									policyStr = Bond::getPolicyStrByCode(bondingPolicyCode);
 								}
 								printf("%10s  %32s         %d/%d" ZT_EOL_S,
 									OSUtils::jsonString(p ["address"],"-").c_str(),
@@ -669,13 +683,8 @@ static int cli(int argc,char **argv)
 		/* zerotier-cli bond command was malformed in some way */
 		printf("(bond) command is missing required arguments" ZT_EOL_S);
 		return 2;
-		const unsigned int scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/bonds",requestHeaders,responseHeaders,responseBody);
-		if (scode == 0) {
-			printf("Error connecting to the ZeroTier service: %s\n\nPlease check that the service is running and that TCP port 9993 can be contacted via 127.0.0.1." ZT_EOL_S, responseBody.c_str());
-			return 1;
-		}
 	} else if (command == "listbonds") {
-		const unsigned int scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/bonds",requestHeaders,responseHeaders,responseBody);
+		const unsigned int scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/peer",requestHeaders,responseHeaders,responseBody);
 
 		if (scode == 0) {
 			printf("Error connecting to the ZeroTier service: %s\n\nPlease check that the service is running and that TCP port 9993 can be contacted via 127.0.0.1." ZT_EOL_S, responseBody.c_str());
@@ -704,13 +713,13 @@ static int cli(int argc,char **argv)
 						nlohmann::json &p = j[k];
 						bool isBonded = p["isBonded"];
 						if (isBonded) {
-							int8_t bondingPolicy = p["bondingPolicy"];
+							int8_t bondingPolicyCode = p["bondingPolicyCode"];
 							int8_t numAliveLinks = p["numAliveLinks"];
 							int8_t numTotalLinks = p["numTotalLinks"];
 							bFoundBond = true;
 							std::string policyStr = "none";
-							if (bondingPolicy >= ZT_BOND_POLICY_NONE && bondingPolicy <= ZT_BOND_POLICY_BALANCE_AWARE) {
-								policyStr = Bond::getPolicyStrByCode(bondingPolicy);
+							if (bondingPolicyCode >= ZT_BOND_POLICY_NONE && bondingPolicyCode <= ZT_BOND_POLICY_BALANCE_AWARE) {
+								policyStr = Bond::getPolicyStrByCode(bondingPolicyCode);
 							}
 							printf("%10s  %32s         %d/%d" ZT_EOL_S,
 								OSUtils::jsonString(p["address"],"-").c_str(),
@@ -1107,17 +1116,7 @@ static int cli(int argc,char **argv)
 		}
 		dump << responseBody << ZT_EOL_S;
 
-		responseHeaders.clear();
-		responseBody = "";
-
-		// get bonds
-		dump << ZT_EOL_S << "bonds" << ZT_EOL_S << "-----" << ZT_EOL_S;
-		scode = Http::GET(1024 * 1024 * 16,60000,(const struct sockaddr *)&addr,"/bonds",requestHeaders,responseHeaders,responseBody);
-		if (scode != 200) {
-			printf("Error connecting to the ZeroTier service: %s\n\nPlease check that the service is running and that TCP port 9993 can be contacted via 127.0.0.1." ZT_EOL_S, responseBody.c_str());
-			return 1;
-		}
-		dump << responseBody << ZT_EOL_S;
+		// Bonds don't need to be queried separately since their data originates from "/peer" responses anyway
 
 		responseHeaders.clear();
 		responseBody = "";
@@ -2234,6 +2233,27 @@ int main(int argc,char **argv)
 					throw std::runtime_error("home path does not exist, and could not create. Please verify local system permissions.");
 			}
 		}
+	}
+
+	// Check and fix permissions on critical files at startup
+	try {
+		char p[4096];
+		OSUtils::ztsnprintf(p, sizeof(p), "%s" ZT_PATH_SEPARATOR_S "identity.secret", homeDir.c_str());
+		if (OSUtils::fileExists(p)) {
+			OSUtils::lockDownFile(p, false);
+		}
+	}
+	catch (...) {
+	}
+
+	try {
+		char p[4096];
+		OSUtils::ztsnprintf(p, sizeof(p), "%s" ZT_PATH_SEPARATOR_S "authtoken.secret", homeDir.c_str());
+		if (OSUtils::fileExists(p)) {
+			OSUtils::lockDownFile(p, false);
+		}
+	}
+	catch (...) {
 	}
 
 	// This can be removed once the new controller code has been around for many versions

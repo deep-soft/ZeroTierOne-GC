@@ -1,5 +1,5 @@
 Name:           zerotier-one
-Version:        1.10.2
+Version:        1.10.6
 Release:        1%{?dist}
 Summary:        ZeroTier network virtualization service
 
@@ -21,6 +21,12 @@ Requires(pre): /usr/sbin/useradd, /usr/bin/getent
 %endif
 
 %if "%{?dist}" == ".fc37"
+BuildRequires: systemd clang openssl1.1 openssl1.1-devel
+Requires:      systemd openssl1.1
+Requires(pre): /usr/sbin/useradd, /usr/bin/getent
+%endif
+
+%if "%{?dist}" == ".fc38"
 BuildRequires: systemd clang openssl1.1 openssl1.1-devel
 Requires:      systemd openssl1.1
 Requires(pre): /usr/sbin/useradd, /usr/bin/getent
@@ -84,7 +90,7 @@ ln -s %{getenv:PWD} %{name}-%{version}
 mkdir -p SOURCES
 tar --exclude=%{name}-%{version}/.git --exclude=%{name}-%{version}/%{name}-%{version} -czf SOURCES/%{name}-%{version}.tar.gz %{name}-%{version}/*
 rm -f %{name}-%{version}
-cp -a %{getenv:PWD}/* .
+# cp -a %{getenv:PWD}/* .
 %endif
 
 %build
@@ -137,7 +143,19 @@ chmod 0755 $RPM_BUILD_ROOT/etc/init.d/zerotier-one
 %endif
 
 %changelog
-* Mon Oct 13 2022 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.2
+* Tue Mar 21 2023 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.6
+- see https://github.com/zerotier/ZeroTierOne for release notes
+
+* Fri Mar 10 2023 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.5
+- see https://github.com/zerotier/ZeroTierOne for release notes
+
+* Mon Mar 06 2023 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.4
+- see https://github.com/zerotier/ZeroTierOne for release notes
+
+* Sat Jan 21 2023 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.3
+- see https://github.com/zerotier/ZeroTierOne for release notes
+
+* Thu Oct 13 2022 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.2
 - see https://github.com/zerotier/ZeroTierOne for release notes
 
 * Mon Jun 27 2022 Adam Ierymenko <adam.ierymenko@zerotier.com> - 1.10.1

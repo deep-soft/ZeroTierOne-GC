@@ -42,7 +42,9 @@
 
 #if (defined(__unix__) || defined(__APPLE__)) && !defined(__LINUX__) && !defined(ZT_SDK)
 #include <net/if.h>
+#if TARGET_OS_OSX
 #include <netinet6/in6_var.h>
+#endif
 #include <sys/ioctl.h>
 #endif
 
@@ -311,7 +313,14 @@ class Binder {
 #else
 			const bool gotViaProc = false;
 #endif
-#if ! defined(ZT_SDK) || ! defined(__ANDROID__)	  // getifaddrs() freeifaddrs() not available on Android
+
+			//
+			// prevent:
+			// warning: unused variable 'gotViaProc'
+			//
+			(void)gotViaProc;
+
+#if ! (defined(ZT_SDK) || defined(__ANDROID__))	  // getifaddrs() freeifaddrs() not available on Android
 			if (! gotViaProc) {
 				struct ifaddrs* ifatbl = (struct ifaddrs*)0;
 				struct ifaddrs* ifa;
@@ -324,7 +333,7 @@ class Binder {
 					while (ifa) {
 						if ((ifa->ifa_name) && (ifa->ifa_addr)) {
 							InetAddress ip = *(ifa->ifa_addr);
-#if (defined(__unix__) || defined(__APPLE__)) && !defined(__LINUX__) && !defined(ZT_SDK)
+#if (defined(__unix__) || defined(__APPLE__)) && !defined(__LINUX__) && !defined(ZT_SDK) && TARGET_OS_OSX
 							// Check if the address is an IPv6 Temporary Address, macOS/BSD version
 							if (ifa->ifa_addr->sa_family == AF_INET6) {
 								struct sockaddr_in6* sa6 = (struct sockaddr_in6*)ifa->ifa_addr;
@@ -340,8 +349,8 @@ class Binder {
 
 								// if this is a temporary IPv6 address, skip to the next address
 								if (flags & IN6_IFF_TEMPORARY) {
-									char buf[64];
 #ifdef ZT_TRACE
+									char buf[64];
 									fprintf(stderr, "skip binding to temporary IPv6 address: %s\n", ip.toIpString(buf));
 #endif
 									ifa = ifa->ifa_next;
